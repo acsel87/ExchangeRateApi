@@ -58,7 +58,6 @@
     <Compile Include="DataAccess\SyncData.cs" />
     <Compile Include="DataAccess\XmlParser.cs" />
     <Compile Include="Helpers\ChangeDateTime.cs" />
-    <Compile Include="Helpers\ChartRateRange.cs" />
     <Compile Include="Models\CurrencyModel.cs" />
     <Compile Include="Models\RateModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

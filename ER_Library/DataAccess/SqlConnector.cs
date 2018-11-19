@@ -48,7 +48,7 @@ namespace ER_Library.DataAccess
             else
             {
                 List<RateModel> missingRates = new List<RateModel>();
-                List<RateModel> rates = XmlParser.ImportRatesFromHtml(GlobalConfig.GetHtmlLink(currency_id, startDate, endDate));
+                List<RateModel> rates = XmlParser.ImportRatesFromHtml(currency_id, startDate, endDate);
 
                 foreach (RateModel rate in rates)
                 {

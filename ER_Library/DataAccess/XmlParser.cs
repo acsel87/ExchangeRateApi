@@ -2,7 +2,9 @@
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
+using System.Net;
 using System.Xml.Linq;
 
 namespace ER_Library.DataAccess
@@ -38,31 +40,47 @@ namespace ER_Library.DataAccess
             return rates;
         }
 
-        public static List<RateModel> ImportRatesFromHtml(string link)
+        public static List<RateModel> ImportRatesFromHtml(int currency_id, DateTime startDate, DateTime endDate)
         {
             List<RateModel> rates = new List<RateModel>();
 
             string xPathDate = "//td[@class='stat_table_cell_date']";
             string xPathRate = "//td[@class='stat_table_cell']";
 
-            HtmlWeb web = new HtmlWeb();
+            string startDateFormated = startDate.ToString("dd-MM-yyyy");
+            string endDateFormated = endDate.ToString("dd-MM-yyyy");
 
-            HtmlDocument htmlDoc = web.Load(link);
-
-            List<string> datesString = htmlDoc.DocumentNode.SelectNodes(xPathDate).Select(x => x.InnerText).ToList();
-            List<string> ratesString = htmlDoc.DocumentNode.SelectNodes(xPathRate).Select(x => x.InnerText).ToList();
-
-            for (int i = 0; i < datesString.Count(); i++)
+            using (WebClient webClient = new WebClient())
             {
-                RateModel rateModel = new RateModel();
+                webClient.BaseAddress = GlobalConfig.GetAppConfig("BaseAddress");
 
-                rateModel.rate_date = Convert.ToDateTime(datesString[i]);
-                rateModel.rate = Convert.ToDecimal(ratesString[i]);
+                NameValueCollection query = new NameValueCollection();
+                query["icid"] = GlobalConfig.GetAppConfig("icid");
+                query["table"] = GlobalConfig.GetAppConfig("table"); ;
+                query["column"] = GlobalConfig.GetAppConfig(currency_id.ToString()); ;
+                query["startDate"] = startDateFormated;
+                query["stopDate"] = endDateFormated;
+                webClient.QueryString.Add(query);
 
-                rates.Add(rateModel);
+                string page = webClient.DownloadString(GlobalConfig.GetAppConfig("HtmlPrefix"));
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(page);
+
+                List<string> datesString = doc.DocumentNode.SelectNodes(xPathDate).Select(x => x.InnerText).ToList();
+                List<string> ratesString = doc.DocumentNode.SelectNodes(xPathRate).Select(x => x.InnerText).ToList();
+
+                for (int i = 0; i < datesString.Count(); i++)
+                {
+                    RateModel rateModel = new RateModel();
+
+                    rateModel.rate_date = Convert.ToDateTime(datesString[i]);
+                    rateModel.rate = Convert.ToDecimal(ratesString[i]);
+
+                    rates.Add(rateModel);
+                }
+
+                return rates;
             }
-
-            return rates;
         }
     }
 }

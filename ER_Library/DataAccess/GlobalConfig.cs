@@ -39,13 +39,5 @@ namespace ER_Library.DataAccess
         {
             Connection = dataConnection;
         }
-
-        public static string GetHtmlLink(int currency_id, DateTime startDate, DateTime endDate)
-        {
-            string startDateFormated = startDate.ToString("dd-MM-yyyy");
-            string endDateFormated = endDate.ToString("dd-MM-yyyy");
-
-            return $"{GetAppConfig("HtmlPrefix")}{GetAppConfig(currency_id.ToString())}{GetAppConfig("HtmlStartDate")}{startDateFormated}{GetAppConfig("HtmlStopDate")}{endDateFormated}";
-        }
     }
 }

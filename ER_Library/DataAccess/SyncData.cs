@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Xml.Linq;
 
 namespace ER_Library.DataAccess
@@ -69,22 +70,23 @@ namespace ER_Library.DataAccess
 
             if (today > lastDate)
             {
-                string _lastDate = today.ToShortDateString();
-                //GlobalConfig.SetAppConfig("LastDate", _lastDate);
-                GlobalConfig.LastDate = _lastDate; // temp: can't set web.config
+                using (WebClient webClient = new WebClient())
+                {
+                    string _lastDate = today.ToShortDateString();
+                    //GlobalConfig.SetAppConfig("LastDate", _lastDate);
+                    GlobalConfig.LastDate = _lastDate; // temp: can't set web.config
 
-                string link = GlobalConfig.GetAppConfig("ValidDaysHtml");
+                    string page = webClient.DownloadString(GlobalConfig.GetAppConfig("ValidDaysHtml"));
+                    HtmlDocument doc = new HtmlDocument();
+                    doc.LoadHtml(page);
 
-                HtmlWeb web = new HtmlWeb();
+                    string dir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+                    string path = Path.Combine(dir, "Files");
+                    string file = "ValidDays.html";
 
-                HtmlDocument htmlDoc = web.Load(link);
-
-                string dir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
-                string path = Path.Combine(dir, "Files");
-                string file = "ValidDays.html";
-
-                htmlDoc.Save("C:\\Files\\ValidDays.html");
-                //htmlDoc.Save(Path.Combine(path, file));
+                    doc.Save("C:\\Files\\ValidDays.html");
+                    //htmlDoc.Save(Path.Combine(path, file));
+                }
             }
         }
 
