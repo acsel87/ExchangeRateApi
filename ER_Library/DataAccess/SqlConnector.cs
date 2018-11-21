@@ -39,31 +39,41 @@ namespace ER_Library.DataAccess
                 isAllDays = connection.Query<bool>("dbo.spCheckIfValidDays", p, commandType: CommandType.StoredProcedure).First();
             }
 
-            List<KeyValuePair<DateTime, decimal>> tempRates = GetRatesInPeriod(startDate, endDate, currency_id, skipValue);
-
             if (isAllDays)
             {
-                return tempRates;
+                return GetRatesSkipped(startDate, endDate, currency_id, skipValue);
             }
             else
             {
+                List<KeyValuePair<DateTime, decimal>> existingRates = GetRatesAll(startDate, endDate, currency_id);
                 List<RateModel> missingRates = new List<RateModel>();
-                List<RateModel> rates = XmlParser.ImportRatesFromHtml(currency_id, startDate, endDate);
-
-                foreach (RateModel rate in rates)
+                List<RateModel> importedRates = XmlParser.ImportRatesFromHtml(currency_id, startDate, endDate);
+                
+                foreach (RateModel rate in importedRates)
                 {
-                    if (!tempRates.Contains(rate.RateKeyValue()))
+                    bool isRate = false;
+
+                    foreach (var pair in existingRates)
                     {
-                        missingRates.Add(rate);
+                        if (rate.rate_date == pair.Key)
+                        {
+                            isRate = true;
+                            break;
+                        }
                     }
+
+                    if (!isRate)
+                    {
+                        missingRates.Add(rate);                        
+                    }                   
                 }
 
                 InsertRates(missingRates, currency_id);
-                return GetRatesInPeriod(startDate, endDate, currency_id, skipValue);
+                return GetRatesSkipped(startDate, endDate, currency_id, skipValue);
             }
         }
 
-        private List<KeyValuePair<DateTime, decimal>> GetRatesInPeriod(DateTime startDate, DateTime endDate, int currency_id, int skipValue)
+        private List<KeyValuePair<DateTime, decimal>> GetRatesSkipped(DateTime startDate, DateTime endDate, int currency_id, int skipValue)
         {
             List<KeyValuePair<DateTime, decimal>> output = new List<KeyValuePair<DateTime, decimal>>();
 
@@ -75,7 +85,24 @@ namespace ER_Library.DataAccess
                 p.Add("@CurrencyId", currency_id);
                 p.Add("@SkipValue", skipValue);
 
-                output = connection.Query<KeyValuePair<DateTime, decimal>>("dbo.spGetRatesInPeriod", p, commandType: CommandType.StoredProcedure).ToList();
+                output = connection.Query<KeyValuePair<DateTime, decimal>>("dbo.spGetRatesSkipped", p, commandType: CommandType.StoredProcedure).ToList();
+            }
+
+            return output;
+        }
+
+        private List<KeyValuePair<DateTime, decimal>> GetRatesAll(DateTime startDate, DateTime endDate, int currency_id)
+        {
+            List<KeyValuePair<DateTime, decimal>> output = new List<KeyValuePair<DateTime, decimal>>();
+
+            using (IDbConnection connection = new System.Data.SqlClient.SqlConnection(GlobalConfig.CnnString(db)))
+            {
+                var p = new DynamicParameters();
+                p.Add("@StartDate", startDate);
+                p.Add("@EndDate", endDate);
+                p.Add("@CurrencyId", currency_id);
+
+                output = connection.Query<KeyValuePair<DateTime, decimal>>("dbo.spGetRatesAll", p, commandType: CommandType.StoredProcedure).ToList();
             }
 
             return output;
